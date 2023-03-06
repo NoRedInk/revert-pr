@@ -9,7 +9,7 @@
 
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.UTF8 as BS
-import Data.Maybe (mapMaybe)
+import Data.Maybe (mapMaybe, maybe)
 import qualified Data.Text as Text
 import GHC.Generics (Generic)
 import System.Exit (ExitCode (..))
@@ -27,9 +27,7 @@ optionsParser = do
 main :: IO ()
 main = sh $ do
   Options {maybePR} <- options "Revert a PR" optionsParser
-  pr <- case maybePR of
-    Nothing -> selectPR
-    Just pr' -> pure pr'
+  pr <- maybe selectPR pure maybePR
   commits <- listCommits pr
   toRevert <- selectCommits commits
   withStash $ do
@@ -37,11 +35,10 @@ main = sh $ do
     revertedCommits <- traverse revertCommit toRevert
     addAll
     commitRevert pr revertedCommits
-  pure ()
 
 selectPR :: Shell Int
 selectPR = do
-  raw <- returnsList $ inproc "gh" ["pr", "list", "--state", "merged"] ""
+  raw <- returnsList $ inshell "gh pr list --state merged" ""
   selected <- inshell "fzf" (select raw)
   pure $ read $ Text.unpack $ head $ Text.words $ lineToText selected
 
@@ -127,17 +124,19 @@ data Action = Reverted | ResolvedConflicts | SkippedMerge
 revertCommit :: Commit -> Shell (Action, Commit)
 revertCommit commit = do
   isMerge <- isMergeCommit commit
+  let commitText = oid commit <> " " <> messageHeadline commit <> "..."
   if isMerge
     then do
-      echoText ("Skipping merge commit " <> oid commit <> " " <> messageHeadline commit <> "...")
+      echoText ("Skipping merge commit " <> commitText)
       pure (SkippedMerge, commit)
     else do
-      echoText ("Reverting " <> oid commit <> " " <> messageHeadline commit <> "...")
+      echoText ("Reverting " <> commitText)
       (exitCode, _, _) <- procStrictWithErr "git" ["revert", "-n", oid commit, "--strategy-option", "ours"] ""
       case exitCode of
         ExitSuccess -> pure (Reverted, commit)
         ExitFailure _ -> do
           _ <- shells "git mergetool" ""
+          echoText ("Resolved conflicts for " <> commitText)
           pure (ResolvedConflicts, commit)
 
 isMergeCommit :: Commit -> Shell Bool
