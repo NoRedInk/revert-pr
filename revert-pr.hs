@@ -27,16 +27,23 @@ optionsParser = do
 main :: IO ()
 main = sh $ do
   Options {maybePR} <- options "Revert a PR" optionsParser
-  case maybePR of
-    Nothing -> echo "TODO"
-    Just pr -> do
-      commits <- listCommits pr
-      toRevert <- selectCommits commits
-      withStash $ do
-        revertedCommits <- traverse revertCommit toRevert
-        addAll
-        commitRevert pr revertedCommits
-      pure ()
+  pr <- case maybePR of
+    Nothing -> selectPR
+    Just pr' -> pure pr'
+  commits <- listCommits pr
+  toRevert <- selectCommits commits
+  withStash $ do
+    echo "Starting to revert commits..."
+    revertedCommits <- traverse revertCommit toRevert
+    addAll
+    commitRevert pr revertedCommits
+  pure ()
+
+selectPR :: Shell Int
+selectPR = do
+  raw <- returnsList $ inproc "gh" ["pr", "list", "--state", "merged"] ""
+  selected <- inshell "fzf" (select raw)
+  pure $ read $ Text.unpack $ head $ Text.words $ lineToText selected
 
 data Commit = Commit {oid :: Text, messageHeadline :: Text}
   deriving (Generic, Show)
