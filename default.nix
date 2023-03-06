@@ -5,5 +5,10 @@ let
   pkgs = import sources.nixpkgs { overlays = overlays; };
 in pkgs.stdenv.mkDerivation {
   name = "revert-pr";
-  buildInputs = [ pkgs.nix-script-haskell pkgs.haskellPackages.turtle ];
+  buildInputs = [
+    pkgs.nix-script-haskell
+    pkgs.fzf
+    pkgs.haskellPackages.turtle
+    pkgs.haskellPackages.aeson
+  ];
 }
