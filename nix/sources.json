@@ -1,4 +1,16 @@
 {
+    "nix-script": {
+        "branch": "v2",
+        "description": "write scripts in compiled languages that run in the nix ecosystem, with no separate build step",
+        "homepage": "",
+        "owner": "BrianHicks",
+        "repo": "nix-script",
+        "rev": "121711f5fd6940c82abff603430aec1f25a8b976",
+        "sha256": "05smglxyqj6f53iddsbfs20f036zq263dc05gb4cilqk6093wgfc",
+        "type": "tarball",
+        "url": "https://github.com/BrianHicks/nix-script/archive/121711f5fd6940c82abff603430aec1f25a8b976.tar.gz",
+        "url_template": "https://github.com/<owner>/<repo>/archive/<rev>.tar.gz"
+    },
     "nixpkgs": {
         "branch": "release-21.05",
         "description": "Nix Packages collection",
